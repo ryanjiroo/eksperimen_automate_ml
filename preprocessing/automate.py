@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 import joblib
-import os # Import the os module
+import os
 
 def preprocess_data(df_path):
     """
@@ -22,8 +22,6 @@ def preprocess_data(df_path):
     df['tanggal'] = pd.to_datetime(df['tanggal'])
 
     # Definisikan ulang kolom numerik setelah menghapus 'bulan' dan 'nama_bulan' (jika ada)
-    # Asumsi kolom 'bulan' dan 'nama_bulan' sudah ada atau akan dibuat dan dihapus
-    # jika belum, baris ini akan dilewati karena tidak ada di df asli yang dimuat.
     if 'bulan' in df.columns:
         df.drop(columns=['bulan', 'nama_bulan'], inplace=True)
 
@@ -37,16 +35,15 @@ def preprocess_data(df_path):
 
     # Mengisi missing value di 'critical' dengan modus
     if 'critical' in df.columns:
-        df['critical'].fillna(df['critical'].mode()[0], inplace=True)
+        # Mengubah penggunaan inplace=True sesuai saran FutureWarning
+        df['critical'] = df['critical'].fillna(df['critical'].mode()[0])
 
     # Menghapus kolom 'pm25' jika ada dan memiliki missing values yang signifikan
     if 'pm25' in df.columns:
-        # Anda bisa menambahkan kondisi di sini jika Anda ingin menghapus hanya jika missing values > threshold
         df.drop(columns=['pm25'], inplace=True)
 
     # Update daftar kolom numerik setelah drop 'pm25'
     current_numerical_cols = ['pm10', 'so2', 'co', 'o3', 'no2', 'max']
-    # Pastikan hanya kolom yang ada di DataFrame yang digunakan
     current_numerical_cols = [col for col in current_numerical_cols if col in df.columns]
 
     # 3. Penanganan Outlier (IQR) - diulang dua kali
@@ -59,14 +56,13 @@ def preprocess_data(df_path):
     df_cleaned = df[~((df[current_numerical_cols] < lower_bound) | (df[current_numerical_cols] > upper_bound)).any(axis=1)].copy()
 
     # Iterasi 2 - untuk kolom yang mungkin masih memiliki outlier setelah iterasi pertama
-    # Buat daftar kolom yang mungkin masih memiliki outlier (pm10, so2, o3, no2, max)
-    # karena co sudah 0 outlier di EDA dan tidak perlu dihapus lagi di iterasi ini
     numerical_cols_for_second_iqr = ['pm10','so2','o3', 'no2', 'max']
-    numerical_cols_for_second_iqr = [col for col in numerical_cols_for_second_iqr if col in df_cleaned.columns] # Pastikan kolom ada
+    numerical_cols_for_second_iqr = [col for col in numerical_cols_for_second_iqr if col in df_cleaned.columns] 
 
     Q1_2 = df_cleaned[numerical_cols_for_second_iqr].quantile(0.25)
     Q3_2 = df_cleaned[numerical_cols_for_second_iqr].quantile(0.75)
-    IQR_2 = Q3_2 - IQR_2 * 1.5
+    # Perbaikan: Hitung IQR_2 dengan benar
+    IQR_2 = Q3_2 - Q1_2 
     lower_bound_2 = Q1_2 - 1.5 * IQR_2
     upper_bound_2 = Q3_2 + 1.5 * IQR_2
     df_cleaned = df_cleaned[~((df_cleaned[numerical_cols_for_second_iqr] < lower_bound_2) | (df_cleaned[numerical_cols_for_second_iqr] > upper_bound_2)).any(axis=1)].copy()
@@ -95,10 +91,9 @@ def preprocess_data(df_path):
 
 # Set output directory
 output_dir = 'preprocessing/ispu_preprocessing'
-os.makedirs(output_dir, exist_ok=True) # Create the directory if it doesn't exist
+os.makedirs(output_dir, exist_ok=True) 
 
 # Contoh penggunaan:
-# Asumsikan 'ispu_dki_all.csv' ada di direktori yang sama
 df_processed, fitted_scaler, fitted_label_encoders = preprocess_data('ispu_dki_all.csv')
 
 # Simpan DataFrame yang sudah diproses ke CSV di dalam output_dir
