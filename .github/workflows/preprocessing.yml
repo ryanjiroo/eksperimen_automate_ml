@@ -26,7 +26,7 @@ jobs:
           pip install pandas scikit-learn joblib
 
       - name: Run Preprocessing Script
-        run: python preprocessing/automate_Silvi_Kusuma.py
+        run: python preprocessing/automate.py
 
       - name: Commit and Push Preprocessed Files
         run: |
@@ -41,5 +41,5 @@ jobs:
       - name: Upload Preprocessed Files as Artifact (optional)
         uses: actions/upload-artifact@v4
         with:
-          name: preprocessed-paddy-dataset
+          name: preprocessed-ispu-dki
           path: preprocessing/
