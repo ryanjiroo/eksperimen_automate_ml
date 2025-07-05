@@ -1,0 +1,45 @@
+name: Automatic Preprocessing
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  run-preprocessing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}  # untuk bisa commit
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas scikit-learn joblib
+
+      - name: Run Preprocessing Script
+        run: python preprocessing/automate_Silvi_Kusuma.py
+
+      - name: Commit and Push Preprocessed Files
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add preprocessing/
+          git diff --cached --quiet || git commit -m "Add auto-preprocessed files"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Preprocessed Files as Artifact (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: preprocessed-paddy-dataset
+          path: preprocessing/
