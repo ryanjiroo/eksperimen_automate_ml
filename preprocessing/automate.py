@@ -1,6 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 import joblib
+import os # Import the os module
 
 def preprocess_data(df_path):
     """
@@ -65,7 +66,7 @@ def preprocess_data(df_path):
 
     Q1_2 = df_cleaned[numerical_cols_for_second_iqr].quantile(0.25)
     Q3_2 = df_cleaned[numerical_cols_for_second_iqr].quantile(0.75)
-    IQR_2 = Q3_2 - Q1_2
+    IQR_2 = Q3_2 - IQR_2 * 1.5
     lower_bound_2 = Q1_2 - 1.5 * IQR_2
     upper_bound_2 = Q3_2 + 1.5 * IQR_2
     df_cleaned = df_cleaned[~((df_cleaned[numerical_cols_for_second_iqr] < lower_bound_2) | (df_cleaned[numerical_cols_for_second_iqr] > upper_bound_2)).any(axis=1)].copy()
@@ -92,19 +93,23 @@ def preprocess_data(df_path):
 
     return df_scaled, scaler, label_encoders
 
+# Set output directory
+output_dir = 'preprocessing/ispu_preprocessing'
+os.makedirs(output_dir, exist_ok=True) # Create the directory if it doesn't exist
+
 # Contoh penggunaan:
 # Asumsikan 'ispu_dki_all.csv' ada di direktori yang sama
 df_processed, fitted_scaler, fitted_label_encoders = preprocess_data('ispu_dki_all.csv')
 
-# Simpan DataFrame yang sudah diproses ke CSV
-df_processed.to_csv('polutan_processed.csv', index=False)
+# Simpan DataFrame yang sudah diproses ke CSV di dalam output_dir
+df_processed.to_csv(os.path.join(output_dir, 'polutan_processed.csv'), index=False)
 
 # Simpan scaler dan label encoders untuk penggunaan di masa mendatang (misalnya, untuk prediksi)
-joblib.dump(fitted_scaler, 'scaler.pkl')
-joblib.dump(fitted_label_encoders, 'label_encoders.pkl')
+joblib.dump(fitted_scaler, os.path.join(output_dir, 'scaler.pkl'))
+joblib.dump(fitted_label_encoders, os.path.join(output_dir, 'label_encoders.pkl'))
 
-print("Data preprocessing selesai. Data yang sudah diproses disimpan ke 'polutan_processed.csv'.")
-print("Scaler disimpan ke 'scaler.pkl' dan Label Encoders ke 'label_encoders.pkl'.")
+print(f"Data preprocessing selesai. Data yang sudah diproses disimpan ke '{output_dir}/polutan_processed.csv'.")
+print(f"Scaler disimpan ke '{output_dir}/scaler.pkl' dan Label Encoders ke '{output_dir}/label_encoders.pkl'.")
 print("\nInfo DataFrame setelah preprocessing:")
 df_processed.info()
 print("\nHead DataFrame setelah preprocessing:")
